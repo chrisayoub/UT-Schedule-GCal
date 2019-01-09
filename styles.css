@@ -1,0 +1,13 @@
+label {
+    font-weight: bold;
+}
+
+.con {
+    display: flex;
+    flex-direction: column;
+    width: 500px;
+}
+
+#in {
+    visibility: hidden;
+}
