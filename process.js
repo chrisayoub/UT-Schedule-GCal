@@ -2,7 +2,7 @@ const CREATE_CAL_URL = "https://www.googleapis.com/calendar/v3/calendars";
 
 function addScheduleToCal(token, calName, semesterStartDate, semesterEndDate) {
     // First, create calendar
-    const calId = createNewCal(token, calName);
+    const calId = 0; // TODO  createNewCal(token, calName);
 
     // Loop through each course
     var rows = document.getElementsByClassName('tbon');
@@ -52,7 +52,7 @@ function processClassMeetings(name, meetingArr, semesterStartDate, semesterEndDa
         console.log(event);
 
         // Push the event to the calendar
-        addEventToCalendar(calId, event, token);
+        // addEventToCalendar(calId, event, token);
 
         off += MEETING_OFF;
     }
@@ -75,11 +75,13 @@ function getStartDateForClass(semesterStartDate, dayString) {
     var days = dayString.split('');
 
     var result = new Date(semesterStartDate);
+    console.log(result.toLocaleString());
     // While the day is not a class day...
-    while (!(days.includes(DAY_MAP[result.getDay()]))) {
+    while (!(days.includes(DAY_MAP[result.getUTCDay()]))) {
         // Add 1 day
         result.setDate(result.getDate() + 1);
     }
+    console.log(result.toLocaleString());
     return result;
 }
 
@@ -139,7 +141,7 @@ function getRRULEStr(dayString, semesterEndDay) {
     days = days.substring(0, days.length - 1);
 
     // Get as UTC
-    const until = new Date(semesterEndDay).toISOString();
+    const until = formatUntil(new Date(semesterEndDay));
     // Create final RRULE string
     return "RRULE:FREQ=WEEKLY;UNTIL=" + until + ";BYDAY=" + days;
 }
@@ -150,15 +152,24 @@ function createEventObj(name, location, startDateTime, endDateTime, dayString, s
         "summary": name,
         "location": location,
         "start": {
-            "dateTime": startDateTime.toISOString()
+            "dateTime": startDateTime.toISOString(),
+            "timeZone": "UTC"
         },
         "end": {
-            "dateTime": endDateTime.toISOString()
+            "dateTime": endDateTime.toISOString(),
+            "timeZone": "UTC"
         },
         "recurrence": [
             getRRULEStr(dayString, semesterEndDay)
         ]
     }
+}
+
+// 19971224T000000Z
+function formatUntil(date) {
+    var month = ("0" + (1 + date.getUTCMonth())).slice(-2);
+    var day = ("0" + date.getUTCDate()).slice(-2);
+    return '' + date.getUTCFullYear() + month + day + 'T000000Z';
 }
 
 // Google Calendar object rep
@@ -201,4 +212,5 @@ chrome.runtime.onMessage.addListener(function(data, sender, sendResponse) {
     var start = new Date(data.start);
     var end = new Date(data.end);
     addScheduleToCal(token, calName, start, end);
+    alert('Done adding events to calendar!');
 });

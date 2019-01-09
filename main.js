@@ -36,8 +36,8 @@ function execScript() {
     chrome.identity.getAuthToken({ 'interactive': true }, function(token) {
         if (token != null) {
             const name = document.getElementById("cal").value;
-            const start = document.getElementById("start").valueAsDate;
-            const end = document.getElementById("end").valueAsDate;
+            const start = document.getElementById("start").value;
+            const end = document.getElementById("end").value;
             if (start == null || end == null) {
                 return;
             }
@@ -47,8 +47,8 @@ function execScript() {
             var data = {
                 token: token,
                 name: name,
-                start: start.toISOString(),
-                end: end.toISOString()
+                start: start,
+                end: end
             };
             // Send message of data to target tab
             chrome.tabs.sendMessage(tabId, data);
