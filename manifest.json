@@ -9,10 +9,11 @@
   "permissions": [
     "https://utdirect.utexas.edu/",
     "identity",
-    "https://accounts.google.com/"
+    "https://accounts.google.com/",
+    "tabs"
   ],
   "oauth2": {
-    "client_id": "24873619306-uin06h5jidp89hb6a40cv9i7rmqqk7bk.apps.googleusercontent.com",
+    "client_id": "24873619306-ov4ujk49tb4hrll0dgpv539p9vt6par5.apps.googleusercontent.com",
     "scopes": [
       "https://www.googleapis.com/auth/calendar.events",
       "https://www.googleapis.com/auth/calendar"
