@@ -1,15 +1,14 @@
 {
   "name": "UT Schedule GCal",
   "description" : "Automatically adds UT semester schedule to Google Calendar",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "manifest_version": 2,
   "browser_action": {
     "default_popup": "popup.html"
   },
   "permissions": [
     "https://utdirect.utexas.edu/",
-    "identity",
-    "https://accounts.google.com/"
+    "identity"
   ],
   "oauth2": {
     "client_id": "24873619306-03513saas89s70ldsvdps79fbt0qoh7j.apps.googleusercontent.com",
