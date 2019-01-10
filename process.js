@@ -3,22 +3,24 @@
 chrome.runtime.onMessage.addListener(processMessage);
 
 function processMessage(data) {
-    console.log('here!');
-
-    let start = new Date(data.start);
-    let end = new Date(data.end);
-
-    console.log(start);
-    console.log(end);
-
+    let start = parseDate(data.start);
+    let end = parseDate(data.end);
     addScheduleToCal(data.token, data.name, start, end);
     alert('Done adding events to calendar!');
-    chrome.runtime.onMessage.removeListener(processMessage);
+    chrome.runtime.onMessage.removeListener(processMessage); // Prevent duplicate executions
+}
+
+// Fixes calendar issue with date picker
+function parseDate(dateStr) {
+    let result = new Date(dateStr);
+    let min = result.getTimezoneOffset();
+    result.setMinutes(result.getMinutes() + min);
+    return result;
 }
 
 function addScheduleToCal(token, calName, semesterStartDate, semesterEndDate) {
     // First, create calendar
-    let calId = 0; // TODO  createNewCal(token, calName);
+    let calId = createNewCal(token, calName);
 
     // Loop through each course
     let rows = document.getElementsByClassName('tbon');
@@ -67,10 +69,9 @@ function processClassMeetings(name, meetingArr, semesterStartDate, semesterEndDa
 
         // Create event object from all of the data
         let event = createEventObj(name, loc, startTime, endTime, dayString, semesterEndDate);
-        console.log(event);
 
         // Push the event to the calendar
-        // addEventToCalendar(calId, event, token);
+        addEventToCalendar(calId, event, token);
 
         off += MEETING_OFF;
     }
@@ -92,13 +93,11 @@ function getStartDateForClass(semesterStartDate, dayString) {
     let days = dayString.split('');
 
     let result = new Date(semesterStartDate); // copy
-    console.log(result.toLocaleString());
     // While the day is not a class day...
-    while (!(days.includes(DAY_MAP[result.getUTCDay()]))) {
+    while (!(days.includes(DAY_MAP[result.getDay()]))) {
         // Add 1 day
         result.setDate(result.getDate() + 1);
     }
-    console.log(result.toLocaleString());
     return result;
 }
 
@@ -162,6 +161,11 @@ function getRRULEStr(dayString, semesterEndDay) {
     return "RRULE:FREQ=WEEKLY;UNTIL=" + until + ";BYDAY=" + days;
 }
 
+// Return user browser timezone string
+function getTimeZone() {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone
+}
+
 // RRULE requires a specific format for the UNTIL field
 // Example: 19971224T000000Z
 function formatUntil(date) {
@@ -193,7 +197,7 @@ function createEventObj(name, location, startDateTime, endDateTime, dayString, s
 function getNewCalObj(name) {
     return {
         "summary": name,
-        "timeZone": Intl.DateTimeFormat().resolvedOptions().timeZone // User browser timezone
+        "timeZone": getTimeZone()
     };
 }
 
