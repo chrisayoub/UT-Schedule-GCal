@@ -1,14 +1,14 @@
-const LOAD_UT_SCHED_MSG = "Load UT semester schedule.";
-const ADD_TO_CAL_MSG = "Add schedule to Calendar.";
-
+const LOAD_UT_SCHED_MSG = "Click to load UT semester schedule. Re-open this once you are logged in.";
+const ADD_TO_CAL_MSG = "Add schedule to Google Calendar";
+const INVALID_INPUT = "Please enter a name, a start date, and an end date.";
 const SCHED_URL = "https://utdirect.utexas.edu/registrar/waitlist/wl_see_my_waitlists.WBX";
 
-var tabId;
+let tabId;
 
-window.onload = function() {
-    chrome.tabs.query({ 'url': SCHED_URL }, function(tabs) {
-        var btn = document.getElementById("btn");
-        var inputFields = document.getElementById("in");
+window.onload = function () {
+    chrome.tabs.query({'url': SCHED_URL}, function (tabs) {
+        let btn = document.getElementById("btn");
+        let inputFields = document.getElementById("in");
 
         if (tabs.length === 0) {
             // If not on schedule page, redirect
@@ -27,29 +27,33 @@ window.onload = function() {
 
 // Load schedule page in new tab
 function loadSchedulePage() {
-    chrome.tabs.create({ 'url': SCHED_URL }, null)
+    chrome.tabs.create({'url': SCHED_URL}, null)
 }
 
 // Execute script
 function execScript() {
     // Authenticate to get the token we need for Google Calendar
-    chrome.identity.getAuthToken({ 'interactive': true }, function(token) {
+    chrome.identity.getAuthToken({'interactive': true}, function (token) {
         if (token != null) {
-            const name = document.getElementById("cal").value;
-            const start = document.getElementById("start").value;
-            const end = document.getElementById("end").value;
-            if (start == null || end == null) {
+            let name = document.getElementById("cal").value;
+            let start = document.getElementById("start").value;
+            let end = document.getElementById("end").value;
+            if (name == null || name === '' ||
+                start == null || start === '' ||
+                end == null || end === '') {
+                alert(INVALID_INPUT);
                 return;
             }
-            // Inject script
-            chrome.tabs.executeScript({file: 'process.js'});
             // Format message data
-            var data = {
+            let data = {
                 token: token,
                 name: name,
                 start: start,
                 end: end
             };
+
+            // Inject script
+            chrome.tabs.executeScript({file: 'process.js'});
             // Send message of data to target tab
             chrome.tabs.sendMessage(tabId, data);
         }

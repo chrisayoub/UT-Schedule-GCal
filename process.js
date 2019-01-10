@@ -1,54 +1,62 @@
-const CREATE_CAL_URL = "https://www.googleapis.com/calendar/v3/calendars";
+// Event listener
+// This receives the data from the popup and executes the main code
+chrome.runtime.onMessage.addListener(function (data) {
+    let start = new Date(data.start);
+    let end = new Date(data.end);
+    addScheduleToCal(data.token, data.name, start, end);
+    alert('Done adding events to calendar!');
+});
 
 function addScheduleToCal(token, calName, semesterStartDate, semesterEndDate) {
     // First, create calendar
-    const calId = 0; // TODO  createNewCal(token, calName);
+    let calId = 0; // TODO  createNewCal(token, calName);
 
     // Loop through each course
-    var rows = document.getElementsByClassName('tbon');
-    for (var i in rows) {
-        var cols = rows[i].children;
+    let rows = document.getElementsByClassName('tbon');
+    for (let i in rows) {
+        let cols = rows[i].children;
         if (cols == null) {
             continue;
         }
         // Grab attributes
-        var course = cols[1].textContent.trim().replace(/\t/, '');
-        var desc = cols[3].textContent.trim();
-        var meetingInfo = cols[2].textContent.trim();
-        var meetingArr = meetingInfo.split(/[\n\t ]+/);
+        let course = cols[1].textContent.trim().replace(/\t/, '');
+        let desc = cols[3].textContent.trim();
+        let meetingInfo = cols[2].textContent.trim();
+        let meetingArr = meetingInfo.split(/[\n\t ]+/);
 
         // Remove extra spaces from course
-        var courseSpl = course.split(' ');
+        let courseSpl = course.split(' ');
         courseSpl[courseSpl.length - 2] = ' ';
         course = courseSpl.join('');
 
         // Format common name
-        var name = course + ' ' + desc;
+        let name = course + ' ' + desc;
 
-        // Loop through class meetings, and add to calendar
+        // Loop through class meetings for the course, and add to calendar
         processClassMeetings(name, meetingArr, semesterStartDate, semesterEndDate, calId, token);
     }
 }
 
+// Adds each course's class meeting as a new calendar event
 function processClassMeetings(name, meetingArr, semesterStartDate, semesterEndDate, calId, token) {
     // Loop through class meetings
-    var off = 0;
-    const MEETING_OFF = 6;
+    let off = 0;
+    const MEETING_OFF = 6; // Static offset for each class meeting
     while (off < meetingArr.length) {
-        var dayString = meetingArr[off];
-        var startTimeStr = meetingArr[1 + off];
-        var endTimeStr = meetingArr[3 + off];
+        let dayString = meetingArr[off]; // MWF, TTH, etc.
+        let startTimeStr = meetingArr[1 + off];
+        let endTimeStr = meetingArr[3 + off];
 
-        // Format location
-        var loc = meetingArr[4 + off] + ' ' + meetingArr[5 + off];
+        // Format full building/location
+        let loc = meetingArr[4 + off] + ' ' + meetingArr[5 + off];
 
         // Get the initial event start and end times
-        var classStartDate = getStartDateForClass(semesterStartDate, dayString);
-        var startTime = addTimeStrToBase(startTimeStr, classStartDate);
-        var endTime = addTimeStrToBase(endTimeStr, classStartDate);
+        let classStartDate = getStartDateForClass(semesterStartDate, dayString);
+        let startTime = addTimeStrToBase(startTimeStr, classStartDate);
+        let endTime = addTimeStrToBase(endTimeStr, classStartDate);
 
         // Create event object from all of the data
-        var event = createEventObj(name, loc, startTime, endTime, dayString, semesterEndDate);
+        let event = createEventObj(name, loc, startTime, endTime, dayString, semesterEndDate);
         console.log(event);
 
         // Push the event to the calendar
@@ -72,9 +80,9 @@ function getStartDateForClass(semesterStartDate, dayString) {
         6: 'X'  // invalid
     };
     dayString = dayString.replace('TH', 'H');
-    var days = dayString.split('');
+    let days = dayString.split('');
 
-    var result = new Date(semesterStartDate);
+    let result = new Date(semesterStartDate);
     console.log(result.toLocaleString());
     // While the day is not a class day...
     while (!(days.includes(DAY_MAP[result.getUTCDay()]))) {
@@ -90,13 +98,14 @@ function getStartDateForClass(semesterStartDate, dayString) {
 // 11 1130 1 130
 // 11a 1130a 1p 130p
 // Note that this assumes anything from 8 to 11 must be AM, and anything from 12 to 7 must be PM
+// Might be incorrect for some courses, but whatever
 function addTimeStrToBase(timeStr, baseDateTime) {
     timeStr = timeStr.replace('a', '');
     timeStr = timeStr.replace('p', '');
 
-    var hour = 0;
-    var min = 0;
-    if (timeStr.length === 1 || timeStr.length === 2) {
+    let hour = 0;
+    let min = 0;
+    if (timeStr.length <= 2) {
         // 1 as in 1:00 pm
         // 11 as in 11:00 am
         hour = parseInt(timeStr);
@@ -115,7 +124,7 @@ function addTimeStrToBase(timeStr, baseDateTime) {
         hour += 12;
     }
 
-    var toReturn = new Date(baseDateTime);
+    let toReturn = new Date(baseDateTime);
     toReturn.setHours(hour, min, 0);
     return toReturn;
 }
@@ -135,15 +144,22 @@ function getRRULEStr(dayString, semesterEndDay) {
 
     let days = "";
     for (let i = 0; i < dayString.length; i++) {
-        let ch = dayString.charAt(i);
-        days += DAY_MAP[ch] + ',';
+        days += DAY_MAP[dayString.charAt(i)] + ',';
     }
-    days = days.substring(0, days.length - 1);
+    days = days.substring(0, days.length - 1); // Remove trailing comma
 
     // Get as UTC
-    const until = formatUntil(new Date(semesterEndDay));
+    let until = formatUntil(new Date(semesterEndDay));
     // Create final RRULE string
     return "RRULE:FREQ=WEEKLY;UNTIL=" + until + ";BYDAY=" + days;
+}
+
+// RRULE requires a specific format for the UNTIL field
+// Example: 19971224T000000Z
+function formatUntil(date) {
+    let month = ("0" + (1 + date.getUTCMonth())).slice(-2);
+    let day = ("0" + date.getUTCDate()).slice(-2);
+    return '' + date.getUTCFullYear() + month + day + 'T000000Z';
 }
 
 // Google Calendar event rep
@@ -165,18 +181,11 @@ function createEventObj(name, location, startDateTime, endDateTime, dayString, s
     }
 }
 
-// 19971224T000000Z
-function formatUntil(date) {
-    var month = ("0" + (1 + date.getUTCMonth())).slice(-2);
-    var day = ("0" + date.getUTCDate()).slice(-2);
-    return '' + date.getUTCFullYear() + month + day + 'T000000Z';
-}
-
 // Google Calendar object rep
 function getNewCalObj(name) {
     return {
         "summary": name,
-        "timeZone": Intl.DateTimeFormat().resolvedOptions().timeZone
+        "timeZone": Intl.DateTimeFormat().resolvedOptions().timeZone // User browser timezone
     };
 }
 
@@ -184,33 +193,22 @@ function getNewCalObj(name) {
 
 // Creates new Google Calendar with given name, return the id
 function createNewCal(token, calName) {
-    var body = getNewCalObj(calName);
-    var xhr = new XMLHttpRequest();
-    var url = CREATE_CAL_URL + '?access_token=' + token;
+    let body = getNewCalObj(calName);
+    let xhr = new XMLHttpRequest();
+    let url = "https://www.googleapis.com/calendar/v3/calendars?access_token=" + token;
     xhr.open("POST", url, false);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.send(JSON.stringify(body));
 
-    var obj = JSON.parse(xhr.responseText);
+    let obj = JSON.parse(xhr.responseText);
     return obj.id;
 }
 
 // Async to add event to calendar
 function addEventToCalendar(id, event, token) {
-    const eventUrl = "https://www.googleapis.com/calendar/v3/calendars/" + id + "/events?access_token=" + token;
-    var xhr = new XMLHttpRequest();
+    let eventUrl = "https://www.googleapis.com/calendar/v3/calendars/" + id + "/events?access_token=" + token;
+    let xhr = new XMLHttpRequest();
     xhr.open("POST", eventUrl);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.send(JSON.stringify(event));
 }
-
-
-// Event listener
-chrome.runtime.onMessage.addListener(function(data, sender, sendResponse) {
-    var token = data.token;
-    var calName = data.name;
-    var start = new Date(data.start);
-    var end = new Date(data.end);
-    addScheduleToCal(token, calName, start, end);
-    alert('Done adding events to calendar!');
-});
