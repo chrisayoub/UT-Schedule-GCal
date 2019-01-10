@@ -5,8 +5,11 @@ chrome.runtime.onMessage.addListener(processMessage);
 function processMessage(data) {
     let start = parseDate(data.start);
     let end = parseDate(data.end);
-    addScheduleToCal(data.token, data.name, start, end);
-    alert('Done adding events to calendar!');
+    createCalendarAndAddEvents(data.token, data.name, start, end);
+}
+
+function finishExecution() {
+    alert('Done adding events to calendar! Open Google Calendar to see the result.');
     chrome.runtime.onMessage.removeListener(processMessage); // Prevent duplicate executions
 }
 
@@ -18,10 +21,16 @@ function parseDate(dateStr) {
     return result;
 }
 
-function addScheduleToCal(token, calName, semesterStartDate, semesterEndDate) {
-    // First, create calendar
-    let calId = createNewCal(token, calName);
+// Starts by creating a calendar (async) and then adds events to the calendar
+function createCalendarAndAddEvents(token, calName, semesterStartDate, semesterEndDate) {
+    createNewCal(token, calName, function (calId) {
+        addScheduleToCal(token, calId, semesterStartDate, semesterEndDate);
+        finishExecution();
+    });
+}
 
+// Adds the events from the schedule to the calendar with the given id
+function addScheduleToCal(token, calId, semesterStartDate, semesterEndDate) {
     // Loop through each course
     let rows = document.getElementsByClassName('tbon');
     for (let i in rows) {
@@ -204,16 +213,17 @@ function getNewCalObj(name) {
 // XHR functions
 
 // Creates new Google Calendar with given name, return the id
-function createNewCal(token, calName) {
+function createNewCal(token, calName, callback) {
     let body = getNewCalObj(calName);
     let xhr = new XMLHttpRequest();
     let url = "https://www.googleapis.com/calendar/v3/calendars?access_token=" + token;
-    xhr.open("POST", url, false);
+    xhr.open("POST", url);
     xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onload = function () {
+        let obj = JSON.parse(xhr.responseText);
+        callback(obj.id);
+    };
     xhr.send(JSON.stringify(body));
-
-    let obj = JSON.parse(xhr.responseText);
-    return obj.id;
 }
 
 // Async to add event to calendar

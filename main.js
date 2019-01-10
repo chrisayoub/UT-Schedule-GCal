@@ -14,7 +14,7 @@ window.onload = function () {
             // If no schedule tab exists, open one
             btn.textContent = LOAD_UT_SCHED_MSG;
             btn.onclick = function () {
-                chrome.tabs.create({'url': SCHED_URL})
+                chrome.tabs.create({'url': SCHED_URL});
             };
         } else if (!tabs[0].active) {
             // Tab is not highlighted, button click will highlight it
