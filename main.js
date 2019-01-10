@@ -11,12 +11,19 @@ window.onload = function () {
         let inputFields = document.getElementById("in");
 
         if (tabs.length === 0) {
-            // If not on schedule page, redirect
+            // If no schedule tab exists, open one
             btn.textContent = LOAD_UT_SCHED_MSG;
-            btn.onclick = loadSchedulePage;
+            btn.onclick = function () {
+                chrome.tabs.create({'url': SCHED_URL})
+            };
+        } else if (!tabs[0].highlighted) {
+            // Tab is not highlighted, button click will higlight it
+            btn.textContent = LOAD_UT_SCHED_MSG;
+            btn.onclick = function () {
+                chrome.tabs.update(tabs[0].id, {highlighted: true});
+            };
         } else {
             // Ready to process schedule
-            chrome.tabs.update(tabs[0].id, {highlighted: true});
             tabId = tabs[0].id;
             btn.textContent = ADD_TO_CAL_MSG;
             btn.onclick = execScript;
@@ -24,11 +31,6 @@ window.onload = function () {
         }
     });
 };
-
-// Load schedule page in new tab
-function loadSchedulePage() {
-    chrome.tabs.create({'url': SCHED_URL}, null)
-}
 
 // Execute script
 function execScript() {
