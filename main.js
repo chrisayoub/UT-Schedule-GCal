@@ -16,8 +16,8 @@ window.onload = function () {
             btn.onclick = function () {
                 chrome.tabs.create({'url': SCHED_URL})
             };
-        } else if (!tabs[0].highlighted) {
-            // Tab is not highlighted, button click will higlight it
+        } else if (!tabs[0].active) {
+            // Tab is not highlighted, button click will highlight it
             btn.textContent = LOAD_UT_SCHED_MSG;
             btn.onclick = function () {
                 chrome.tabs.update(tabs[0].id, {highlighted: true});
@@ -55,9 +55,10 @@ function execScript() {
             };
 
             // Inject script
-            chrome.tabs.executeScript({file: 'process.js'});
-            // Send message of data to target tab
-            chrome.tabs.sendMessage(tabId, data);
+            chrome.tabs.executeScript({file: 'process.js'}, function () {
+                // Send message of data to target tab
+                chrome.tabs.sendMessage(tabId, data);
+            });
         }
     });
 }

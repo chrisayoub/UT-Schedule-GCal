@@ -1,11 +1,20 @@
 // Event listener
 // This receives the data from the popup and executes the main code
-chrome.runtime.onMessage.addListener(function (data) {
+chrome.runtime.onMessage.addListener(processMessage);
+
+function processMessage(data) {
+    console.log('here!');
+
     let start = new Date(data.start);
     let end = new Date(data.end);
+
+    console.log(start);
+    console.log(end);
+
     addScheduleToCal(data.token, data.name, start, end);
     alert('Done adding events to calendar!');
-});
+    chrome.runtime.onMessage.removeListener(processMessage);
+}
 
 function addScheduleToCal(token, calName, semesterStartDate, semesterEndDate) {
     // First, create calendar
@@ -44,6 +53,7 @@ function processClassMeetings(name, meetingArr, semesterStartDate, semesterEndDa
     const MEETING_OFF = 6; // Static offset for each class meeting
     while (off < meetingArr.length) {
         let dayString = meetingArr[off]; // MWF, TTH, etc.
+        dayString = dayString.replace('TH', 'H'); // Replace TH with H, single letter
         let startTimeStr = meetingArr[1 + off];
         let endTimeStr = meetingArr[3 + off];
 
@@ -79,10 +89,9 @@ function getStartDateForClass(semesterStartDate, dayString) {
         5: 'F',
         6: 'X'  // invalid
     };
-    dayString = dayString.replace('TH', 'H');
     let days = dayString.split('');
 
-    let result = new Date(semesterStartDate);
+    let result = new Date(semesterStartDate); // copy
     console.log(result.toLocaleString());
     // While the day is not a class day...
     while (!(days.includes(DAY_MAP[result.getUTCDay()]))) {
@@ -140,7 +149,6 @@ function getRRULEStr(dayString, semesterEndDay) {
         'H': 'TH',
         'F': 'FR'
     };
-    dayString = dayString.replace('TH', 'H');
 
     let days = "";
     for (let i = 0; i < dayString.length; i++) {
