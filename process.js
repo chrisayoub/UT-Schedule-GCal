@@ -35,7 +35,8 @@ function addScheduleToCal(token, calId, semesterStartDate, semesterEndDate) {
     let rows = document.getElementsByClassName('tbon');
     for (let i in rows) {
         let cols = rows[i].children;
-        if (cols == null) {
+        if (cols == null || cols.length !== 4) {
+            // Skip non-course rows (such as waitlist)
             continue;
         }
         // Grab attributes
@@ -43,6 +44,11 @@ function addScheduleToCal(token, calId, semesterStartDate, semesterEndDate) {
         let desc = cols[3].textContent.trim();
         let meetingInfo = cols[2].textContent.trim();
         let meetingArr = meetingInfo.split(/[\n\t ]+/);
+
+        if (meetingArr.length <= 1) {
+            // Empty meeting, online course?
+            continue;
+        }
 
         // Remove extra spaces from course
         let courseSpl = course.split(' ');
