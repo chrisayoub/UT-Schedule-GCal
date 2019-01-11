@@ -54,6 +54,10 @@ function execScript() {
                 end: end
             };
 
+            // Disable button and add loading indicator
+            document.getElementById("btn").disabled = true;
+            document.getElementById("loader").style.display = "block";
+
             // Inject script
             chrome.tabs.executeScript({file: 'process.js'}, function () {
                 // Send message of data to target tab
