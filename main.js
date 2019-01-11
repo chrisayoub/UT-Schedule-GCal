@@ -27,7 +27,7 @@ window.onload = function () {
             tabId = tabs[0].id;
             btn.textContent = ADD_TO_CAL_MSG;
             btn.onclick = execScript;
-            inputFields.style.visibility = "visible";
+            inputFields.style.display = "inherit";
         }
     });
 };

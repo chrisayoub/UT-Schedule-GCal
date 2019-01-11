@@ -9,7 +9,7 @@ label {
 }
 
 #in {
-    visibility: hidden;
+    display: none;
 }
 
 #loader {
