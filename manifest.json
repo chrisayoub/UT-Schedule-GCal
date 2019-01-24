@@ -1,7 +1,7 @@
 {
   "name": "UT Schedule GCal",
   "description" : "Automatically adds UT semester schedule to Google Calendar",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "manifest_version": 2,
   "browser_action": {
     "default_popup": "popup.html",
