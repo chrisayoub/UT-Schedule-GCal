@@ -79,8 +79,10 @@ function processClassMeetings(name, meetingArr, semesterStartDate, semesterEndDa
 
         // Get the initial event start and end times
         let classStartDate = getStartDateForClass(semesterStartDate, dayString);
-        let startTime = addTimeStrToBase(startTimeStr, classStartDate);
-        let endTime = addTimeStrToBase(endTimeStr, classStartDate);
+        // Returns both values
+        let startAndEndTime = addTimeStrToBase(startTimeStr, endTimeStr, classStartDate);
+        let startTime = startAndEndTime[0];
+        let endTime = startAndEndTime[1];
 
         // Create event object from all of the data
         let event = createEventObj(name, loc, startTime, endTime, dayString, semesterEndDate);
@@ -120,9 +122,32 @@ function getStartDateForClass(semesterStartDate, dayString) {
 // Possible inputs:
 // 11 1130 1 130
 // 11a 1130a 1p 130p
-// Note that this assumes anything from 8 to 11 must be AM, and anything from 12 to 7 must be PM
-// Might be incorrect for some courses, but whatever
-function addTimeStrToBase(timeStr, baseDateTime) {
+function addTimeStrToBase(startTimeStr, endTimeStr, baseDateTime) {
+    let start = parseHourMin(startTimeStr);
+    let end = parseHourMin(endTimeStr);
+
+    let startHr = start[0];
+    let startMin = start[1];
+    let endHr = end[0];
+    let endMin = end[1];
+
+    if (endTimeStr.includes("p") && endHr !== 12) {
+        // PM offset
+        endHr += 12;
+    }
+
+    if (endHr - startHr > 6) {
+        // Compensate the start hour to be correct AM/PM
+        startHr += 12;
+    }
+
+    let toReturn = [new Date(baseDateTime), new Date(baseDateTime)];
+    toReturn[0].setHours(startHr, startMin, 0);
+    toReturn[1].setHours(endHr, endMin, 0);
+    return toReturn;
+}
+
+function parseHourMin(timeStr) {
     timeStr = timeStr.replace('a', '');
     timeStr = timeStr.replace('p', '');
 
@@ -142,14 +167,7 @@ function addTimeStrToBase(timeStr, baseDateTime) {
         min = parseInt(timeStr.substring(2));
     }
 
-    if (hour < 8) {
-        // PM
-        hour += 12;
-    }
-
-    let toReturn = new Date(baseDateTime);
-    toReturn.setHours(hour, min, 0);
-    return toReturn;
+    return [hour, min];
 }
 
 // Create string for recurring event
