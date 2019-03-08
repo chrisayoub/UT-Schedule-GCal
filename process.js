@@ -40,8 +40,8 @@ function addScheduleToCal(token, calId, semesterStartDate, semesterEndDate) {
     let rows = document.getElementsByTagName("TR");
     for (let i in rows) {
         let cols = rows[i].children;
-        if (cols[0] === 'Unique') {
-            // Skip header row
+        if (cols === undefined || cols == null || cols[0].textContent === 'Unique') {
+            // Skip header, bad rows
             continue;
         }
 
@@ -61,7 +61,7 @@ function addScheduleToCal(token, calId, semesterStartDate, semesterEndDate) {
         }
 
         // Format common name
-        let name = course + ' - ' + desc;
+        let name = course + ' ' + desc;
 
         // For each class meeting...
         for (let j = 0; j < buildingArr.length; j++) {
@@ -78,10 +78,10 @@ function addScheduleToCal(token, calId, semesterStartDate, semesterEndDate) {
             let classStartDate = getStartDateForClass(semesterStartDate, dayString);
 
             // Parse time
-            let time = timeArr[j];
-            let timeSpl = time.split('- ');
-            let startTime = addTimeStrToBase(timeSpl[0], classStartDate);
-            let endTime = addTimeStrToBase(timeSpl[1], classStartDate);
+            let startTimeStr = timeArr[2 * j];
+            let endTimeStr = timeArr[2 * j + 1];
+            let startTime = addTimeStrToBase(startTimeStr, classStartDate);
+            let endTime = addTimeStrToBase(endTimeStr, classStartDate);
 
             // Create event object from all of the data
             let event = createEventObj(name, loc, startTime, endTime, dayString, semesterEndDate);
@@ -122,10 +122,11 @@ function addTimeStrToBase(timeStr, baseDateTime) {
     let isPm = timeStr.includes('pm');
     timeStr = timeStr.replace('am', '');
     timeStr = timeStr.replace('pm', '');
+    timeStr = timeStr.replace('-', '');
 
     let colonSplit = timeStr.split(':');
-    let hour = colonSplit[0];
-    let min = colonSplit[1];
+    let hour = parseInt(colonSplit[0]);
+    let min = parseInt(colonSplit[1]);
 
     if (isPm && hour !== 12) {
         // PM offset
@@ -169,10 +170,10 @@ function getTimeZone() {
 // RRULE requires a specific format for the UNTIL field
 // Example: 19971224T000000Z
 function formatUntil(date) {
-    // TODO fix this for the bug DST
     let month = ("0" + (1 + date.getUTCMonth())).slice(-2);
     let day = ("0" + date.getUTCDate()).slice(-2);
-    return '' + date.getUTCFullYear() + month + day + 'T000000Z';
+    let hour = ("0" + date.getUTCHours()).slice(-2);
+    return '' + date.getUTCFullYear() + month + day + 'T' + hour + '0000Z';
 }
 
 // Google Calendar event rep
@@ -181,14 +182,16 @@ function createEventObj(name, location, startDateTime, endDateTime, dayString, s
         "summary": name,
         "location": location,
         "start": {
-            "dateTime": startDateTime.toISOString()
+            "dateTime": startDateTime.toISOString(),
+            "timeZone": getTimeZone()
         },
         "end": {
-            "dateTime": endDateTime.toISOString()
+            "dateTime": endDateTime.toISOString(),
+            "timeZone": getTimeZone()
         },
-        // "recurrence": [ // TODO comment back in
-        //     getRRULEStr(dayString, semesterEndDay)
-        // ]
+        "recurrence": [
+            getRRULEStr(dayString, semesterEndDay)
+        ]
     }
 }
 
