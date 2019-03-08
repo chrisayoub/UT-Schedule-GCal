@@ -29,6 +29,11 @@ function createCalendarAndAddEvents(token, calName, semesterStartDate, semesterE
     });
 }
 
+// Split multi-line text content strings into arrays
+function splitMulti(content) {
+    return content.trim().split(/\s+/g);
+}
+
 // Adds the events from the schedule to the calendar with the given id
 function addScheduleToCal(token, calId, semesterStartDate, semesterEndDate) {
     // Loop through each course
@@ -44,13 +49,13 @@ function addScheduleToCal(token, calId, semesterStartDate, semesterEndDate) {
         let course = cols[1].textContent.trim();
         let desc = cols[2].textContent.trim();
 
-        // TODO, fix for multiple class meetings?
-        let building = cols[3].textContent.trim();
-        let room = cols[4].textContent.trim();
-        let days = cols[5].textContent.trim();
-        let time = cols[6].textContent.trim();
+        // For these, there could be multiple, distinct class meetings
+        let buildingArr = splitMulti(cols[3].textContent);
+        let roomArr = splitMulti(cols[4].textContent);
+        let daysArr = splitMulti(cols[5].textContent);
+        let timeArr = splitMulti(cols[6].textContent);
 
-        if (days.length === 0) {
+        if (daysArr.length === 0) {
             // Empty meeting, online course? Ignore.
             continue;
         }
@@ -58,44 +63,32 @@ function addScheduleToCal(token, calId, semesterStartDate, semesterEndDate) {
         // Format common name
         let name = course + ' - ' + desc;
 
-        // Loop through class meetings for the course, and add to calendar
-        processClassMeetings(name, meetingArr, semesterStartDate, semesterEndDate, calId, token);
-    }
-}
+        // For each class meeting...
+        for (let j = 0; j < buildingArr.length; j++) {
+            // Formulate location
+            let building = buildingArr[j];
+            let room = roomArr[j];
+            let loc = building + ' ' + room;
 
-// TODO update params
-// Adds each course's class meeting as a new calendar event
-function processClassMeetings(name, meetingArr, semesterStartDate, semesterEndDate, calId, token) {
-    // Loop through class meetings
-    // TODO loop through what?
-    let off = 0;
-    const MEETING_OFF = 6; // Static offset for each class meeting
-    while (off < meetingArr.length) {
-        let dayString = meetingArr[off]; // MWF, TTH, etc.
-        dayString = dayString.replace('TH', 'H'); // Replace TH with H, single letter
-        let startTimeStr = meetingArr[1 + off];
-        let endTimeStr = meetingArr[3 + off];
+            // Extract days
+            let dayString = daysArr[j]; // MWF, TTH, etc.
+            dayString = dayString.replace('TH', 'H'); // Replace TH with H, single letter
 
-        // Format full building/location
-        let loc = meetingArr[4 + off] + ' ' + meetingArr[5 + off];
+            // Get the initial event start and end times
+            let classStartDate = getStartDateForClass(semesterStartDate, dayString);
 
-        // Get the initial event start and end times
-        let classStartDate = getStartDateForClass(semesterStartDate, dayString);
+            // Parse time
+            let time = timeArr[j];
+            let timeSpl = time.split('- ');
+            let startTime = addTimeStrToBase(timeSpl[0], classStartDate);
+            let endTime = addTimeStrToBase(timeSpl[1], classStartDate);
 
+            // Create event object from all of the data
+            let event = createEventObj(name, loc, startTime, endTime, dayString, semesterEndDate);
 
-        // Calculate start and end times
-        let time = null; // TODO FIX
-        let timeSpl = time.split('- ');
-        let startTime = addTimeStrToBase(timeSpl[0], classStartDate);
-        let endTime = addTimeStrToBase(timeSpl[1], classStartDate);
-
-        // Create event object from all of the data
-        let event = createEventObj(name, loc, startTime, endTime, dayString, semesterEndDate);
-
-        // Push the event to the calendar
-        addEventToCalendar(calId, event, token);
-
-        off += MEETING_OFF;
+            // Push the event to the calendar
+            addEventToCalendar(calId, event, token);
+        }
     }
 }
 
@@ -193,9 +186,9 @@ function createEventObj(name, location, startDateTime, endDateTime, dayString, s
         "end": {
             "dateTime": endDateTime.toISOString()
         },
-        "recurrence": [
-            getRRULEStr(dayString, semesterEndDay)
-        ]
+        // "recurrence": [ // TODO comment back in
+        //     getRRULEStr(dayString, semesterEndDay)
+        // ]
     }
 }
 
