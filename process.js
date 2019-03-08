@@ -34,6 +34,13 @@ function splitMulti(content) {
     return content.trim().split(/\s+/g);
 }
 
+// https://stackoverflow.com/questions/4878756/how-to-capitalize-first-letter-of-each-word-like-a-2-word-city
+function toTitleCase(str) {
+    return str.replace(/\w\S*/g, function(txt){
+        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    });
+}
+
 // Adds the events from the schedule to the calendar with the given id
 function addScheduleToCal(token, calId, semesterStartDate, semesterEndDate) {
     // Loop through each course
@@ -47,7 +54,7 @@ function addScheduleToCal(token, calId, semesterStartDate, semesterEndDate) {
 
         // Grab attributes
         let course = cols[1].textContent.trim();
-        let desc = cols[2].textContent.trim();
+        let desc = toTitleCase(cols[2].textContent.trim());
 
         // For these, there could be multiple, distinct class meetings
         let buildingArr = splitMulti(cols[3].textContent);
