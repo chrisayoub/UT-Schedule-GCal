@@ -176,6 +176,7 @@ function getTimeZone() {
 // RRULE requires a specific format for the UNTIL field
 // Example: 19971224T000000Z
 function formatUntil(date) {
+    // TODO fix this for the bug DST
     let month = ("0" + (1 + date.getUTCMonth())).slice(-2);
     let day = ("0" + date.getUTCDate()).slice(-2);
     return '' + date.getUTCFullYear() + month + day + 'T000000Z';
@@ -187,12 +188,10 @@ function createEventObj(name, location, startDateTime, endDateTime, dayString, s
         "summary": name,
         "location": location,
         "start": {
-            "dateTime": startDateTime.toISOString(),
-            "timeZone": "UTC"
+            "dateTime": startDateTime.toISOString()
         },
         "end": {
-            "dateTime": endDateTime.toISOString(),
-            "timeZone": "UTC"
+            "dateTime": endDateTime.toISOString()
         },
         "recurrence": [
             getRRULEStr(dayString, semesterEndDay)
