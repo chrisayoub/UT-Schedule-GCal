@@ -1,7 +1,7 @@
 const LOAD_UT_SCHED_MSG = "Click to load UT semester schedule. Re-open this once you are logged in.";
 const ADD_TO_CAL_MSG = "Add schedule to Google Calendar";
 const INVALID_INPUT = "Please enter a name, a start date, and an end date.";
-const SCHED_URL = "https://utdirect.utexas.edu/registrar/waitlist/wl_see_my_waitlists.WBX";
+const SCHED_URL = "https://utdirect.utexas.edu/registration/classlist.WBX";
 
 let tabId;
 

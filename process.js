@@ -32,40 +32,42 @@ function createCalendarAndAddEvents(token, calName, semesterStartDate, semesterE
 // Adds the events from the schedule to the calendar with the given id
 function addScheduleToCal(token, calId, semesterStartDate, semesterEndDate) {
     // Loop through each course
-    let rows = document.getElementsByClassName('tbon');
+    let rows = document.getElementsByTagName("TR");
     for (let i in rows) {
         let cols = rows[i].children;
-        if (cols == null || cols.length !== 4) {
-            // Skip non-course rows (such as waitlist)
+        if (cols[0] === 'Unique') {
+            // Skip header row
             continue;
         }
+
         // Grab attributes
-        let course = cols[1].textContent.trim().replace(/\t/, '');
-        let desc = cols[3].textContent.trim();
-        let meetingInfo = cols[2].textContent.trim();
-        let meetingArr = meetingInfo.split(/[\n\t ]+/);
+        let course = cols[1].textContent.trim();
+        let desc = cols[2].textContent.trim();
 
-        if (meetingArr.length <= 1) {
-            // Empty meeting, online course?
+        // TODO, fix for multiple class meetings?
+        let building = cols[3].textContent.trim();
+        let room = cols[4].textContent.trim();
+        let days = cols[5].textContent.trim();
+        let time = cols[6].textContent.trim();
+
+        if (days.length === 0) {
+            // Empty meeting, online course? Ignore.
             continue;
         }
-
-        // Remove extra spaces from course
-        let courseSpl = course.split(' ');
-        courseSpl[courseSpl.length - 2] = ' ';
-        course = courseSpl.join('');
 
         // Format common name
-        let name = course + ' ' + desc;
+        let name = course + ' - ' + desc;
 
         // Loop through class meetings for the course, and add to calendar
         processClassMeetings(name, meetingArr, semesterStartDate, semesterEndDate, calId, token);
     }
 }
 
+// TODO update params
 // Adds each course's class meeting as a new calendar event
 function processClassMeetings(name, meetingArr, semesterStartDate, semesterEndDate, calId, token) {
     // Loop through class meetings
+    // TODO loop through what?
     let off = 0;
     const MEETING_OFF = 6; // Static offset for each class meeting
     while (off < meetingArr.length) {
@@ -79,10 +81,13 @@ function processClassMeetings(name, meetingArr, semesterStartDate, semesterEndDa
 
         // Get the initial event start and end times
         let classStartDate = getStartDateForClass(semesterStartDate, dayString);
-        // Returns both values
-        let startAndEndTime = addTimeStrToBase(startTimeStr, endTimeStr, classStartDate);
-        let startTime = startAndEndTime[0];
-        let endTime = startAndEndTime[1];
+
+
+        // Calculate start and end times
+        let time = null; // TODO FIX
+        let timeSpl = time.split('- ');
+        let startTime = addTimeStrToBase(timeSpl[0], classStartDate);
+        let endTime = addTimeStrToBase(timeSpl[1], classStartDate);
 
         // Create event object from all of the data
         let event = createEventObj(name, loc, startTime, endTime, dayString, semesterEndDate);
@@ -119,55 +124,24 @@ function getStartDateForClass(semesterStartDate, dayString) {
 }
 
 // Adds a time string to a base date time
-// Possible inputs:
-// 11 1130 1 130
-// 11a 1130a 1p 130p
-function addTimeStrToBase(startTimeStr, endTimeStr, baseDateTime) {
-    let start = parseHourMin(startTimeStr);
-    let end = parseHourMin(endTimeStr);
+// Accepts input such as '2:00pm' or '11:30am'
+function addTimeStrToBase(timeStr, baseDateTime) {
+    let isPm = timeStr.includes('pm');
+    timeStr = timeStr.replace('am', '');
+    timeStr = timeStr.replace('pm', '');
 
-    let startHr = start[0];
-    let startMin = start[1];
-    let endHr = end[0];
-    let endMin = end[1];
+    let colonSplit = timeStr.split(':');
+    let hour = colonSplit[0];
+    let min = colonSplit[1];
 
-    if (endTimeStr.includes("p") && endHr !== 12) {
+    if (isPm && hour !== 12) {
         // PM offset
-        endHr += 12;
+        hour += 12;
     }
 
-    if (endHr - startHr > 6) {
-        // Compensate the start hour to be correct AM/PM
-        startHr += 12;
-    }
-
-    let toReturn = [new Date(baseDateTime), new Date(baseDateTime)];
-    toReturn[0].setHours(startHr, startMin, 0);
-    toReturn[1].setHours(endHr, endMin, 0);
+    let toReturn = new Date(baseDateTime);
+    toReturn.setHours(hour, min, 0);
     return toReturn;
-}
-
-function parseHourMin(timeStr) {
-    timeStr = timeStr.replace('a', '');
-    timeStr = timeStr.replace('p', '');
-
-    let hour = 0;
-    let min = 0;
-    if (timeStr.length <= 2) {
-        // 1 as in 1:00 pm
-        // 11 as in 11:00 am
-        hour = parseInt(timeStr);
-    } else if (timeStr.length === 3) {
-        // 130 as in 1:30 pm
-        hour = parseInt(timeStr.substring(0, 1));
-        min = parseInt(timeStr.substring(1));
-    } else { // 4
-        // 1130 as in 11:30 am
-        hour = parseInt(timeStr.substring(0, 2));
-        min = parseInt(timeStr.substring(2));
-    }
-
-    return [hour, min];
 }
 
 // Create string for recurring event
