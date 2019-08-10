@@ -6,7 +6,7 @@ const SCHED_URL = "https://utdirect.utexas.edu/registration/classlist.WBX";
 let tabId;
 
 window.onload = function () {
-    chrome.tabs.query({'url': SCHED_URL}, function (tabs) {
+    chrome.tabs.query({'url': SCHED_URL + "*"}, function (tabs) {
         let btn = document.getElementById("btn");
         let inputFields = document.getElementById("in");
 
