@@ -31,7 +31,12 @@ function createCalendarAndAddEvents(token, calName, semesterStartDate, semesterE
 
 // Split multi-line text content strings into arrays
 function splitMulti(content) {
-    return content.trim().split(/\s+/g);
+    const result = content.trim().split(/\s+/g);
+    if (result[0].includes('-') && result.length === 1) {
+        return result[0].split('-');
+    } else {
+        return result;
+    }
 }
 
 // https://stackoverflow.com/questions/4878756/how-to-capitalize-first-letter-of-each-word-like-a-2-word-city
@@ -202,35 +207,30 @@ function createEventObj(name, location, startDateTime, endDateTime, dayString, s
     }
 }
 
-// Google Calendar object rep
-function getNewCalObj(name) {
-    return {
-        "summary": name,
-        "timeZone": getTimeZone()
-    };
-}
-
 // XHR functions
 
 // Creates new Google Calendar with given name, return the id
 function createNewCal(token, calName, callback) {
-    let body = getNewCalObj(calName);
-    let xhr = new XMLHttpRequest();
-    let url = "https://www.googleapis.com/calendar/v3/calendars?access_token=" + token;
-    xhr.open("POST", url);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.onload = function () {
-        let obj = JSON.parse(xhr.responseText);
-        callback(obj.id);
-    };
-    xhr.send(JSON.stringify(body));
+    chrome.runtime.sendMessage(
+        {
+            contentScriptQuery: "createNewCal",
+            token,
+            calName,
+        },
+        response => {
+            callback(response)
+        }
+    );
 }
 
 // Async to add event to calendar
 function addEventToCalendar(id, event, token) {
-    let eventUrl = "https://www.googleapis.com/calendar/v3/calendars/" + id + "/events?access_token=" + token;
-    let xhr = new XMLHttpRequest();
-    xhr.open("POST", eventUrl);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.send(JSON.stringify(event));
+    chrome.runtime.sendMessage(
+        {
+            contentScriptQuery: "addEventToCalendar",
+            token,
+            id,
+            event,
+        }
+    );
 }

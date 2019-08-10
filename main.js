@@ -6,6 +6,23 @@ const SCHED_URL = "https://utdirect.utexas.edu/registration/classlist.WBX";
 let tabId;
 
 window.onload = function () {
+    // Register request handlers
+    chrome.runtime.onMessage.addListener(
+        function(request, _, sendResponse) {
+            switch (request.contentScriptQuery) {
+                case "createNewCal":
+                    createNewCal(request.token, request.calName, id => sendResponse(id));
+                    return true;
+                case "addEventToCalendar":
+                    addEventToCalendar(request.id, request.event, request.token);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    );
+
+    // State based on current tabs
     chrome.tabs.query({'url': SCHED_URL + "*"}, function (tabs) {
         let btn = document.getElementById("btn");
         let inputFields = document.getElementById("in");
@@ -65,4 +82,37 @@ function execScript() {
             });
         }
     });
+}
+
+// Request handlers
+
+// Google Calendar object rep
+function getNewCalObj(name) {
+    return {
+        "summary": name,
+        "timeZone": Intl.DateTimeFormat().resolvedOptions().timeZone
+    };
+}
+
+// Creates new Google Calendar with given name, return the id
+function createNewCal(token, calName, callback) {
+    let body = getNewCalObj(calName);
+    let xhr = new XMLHttpRequest();
+    let url = "https://www.googleapis.com/calendar/v3/calendars?access_token=" + token;
+    xhr.open("POST", url);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onload = function () {
+        let obj = JSON.parse(xhr.responseText);
+        callback(obj.id);
+    };
+    xhr.send(JSON.stringify(body));
+}
+
+// Async to add event to calendar
+function addEventToCalendar(id, event, token) {
+    let eventUrl = "https://www.googleapis.com/calendar/v3/calendars/" + id + "/events?access_token=" + token;
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", eventUrl);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.send(JSON.stringify(event));
 }
